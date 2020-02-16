@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, View, InteractionManager } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import {SecurityConfigurationManager} from '../ClientApp/src/library/utils/security-configuration-manager';
+import {SecurityConfigurationManager} from './src/utils/security-configuration-manager';
 import HomeScreen from './src/screens/home/home-screen';
 
 export default function App() {

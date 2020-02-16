@@ -1,9 +1,13 @@
 import React, { Component } from "react";
-import { View, FlatList, SafeAreaView } from "react-native";
+import { FlatList, SafeAreaView } from "react-native";
 import { ListItem } from "react-native-elements";
 
-import { HttpClientService } from "../../library/networking/http-client-service";
+import MediaService from "../../library/services/media-service";
 import { Result } from "../../library/models/TvShows";
+import UrlBuilder from "../../utils/url-builder";
+import ImageSizesEnum from "../../library/enums/image-sizes-enum";
+import { Order } from "../../library/enums/order-enum";
+import Filters from "../../utils/filters";
 
 export default class HomeScreen extends Component {
   tvShows: Result[];
@@ -17,22 +21,26 @@ export default class HomeScreen extends Component {
     refreshing: false
   };
 
-  httpClient: HttpClientService;
+  mediaService: MediaService;
 
   constructor(props) {
     super(props);
-    this.httpClient = new HttpClientService();
+    this.mediaService = new MediaService();
   }
 
   async componentDidMount() {
+    await this.getFilteredTopTvShows();
+  }
+
+  private async getFilteredTopTvShows() {
     try {
-      let results = await this.httpClient.getTopTvShowsAsync();
+      let results = await this.mediaService.getTopTvShowsAsync();
       this.setState({
-        data: results.data.results.sort((two, one) => {
-          if (one.popularity > two.popularity) { return 1; }
-          if (one.popularity < two.popularity) { return -1; }
-          return 0;
-        }),
+        data: Filters.sortByProperty<Result>(
+          results.data.results,
+          "popularity",
+          Order.Descending
+        ),
         error: results.status !== 200 || null,
         loading: false,
         refreshing: false
@@ -43,23 +51,26 @@ export default class HomeScreen extends Component {
     }
   }
 
-  showEmptyListView() { return <View>...Loading</View>; }
+  private keyExtractor = (item, index) => index.toString();
 
-  keyExtractor = (item, index) => index.toString();
-
-  renderItem = ({ item }) => (
+  private renderItem = ({ item }) => (
     <ListItem
-      title={item.name + " - " + item.popularity}
-      subtitle={"Air Date: " + item.first_air_date}
-      leftAvatar={{ source: { uri: this.buildImageUrl(item.poster_path) } }}
+      title={item.name}
+      subtitle={`Air Date: ${item.first_air_date}\nRating: ${item.popularity}`}
+      leftAvatar={{
+        source: {
+          uri: UrlBuilder.buildImageUrl(
+            item.poster_path,
+            ImageSizesEnum.PosterSizes.w45
+          )
+        }
+      }}
       bottomDivider
       chevron
     />
   );
 
-  buildImageUrl(posterPath: string) { return "https://image.tmdb.org/t/p/w500/" + posterPath; }
-
-  render() {
+  private renderToScreen() {
     return (
       <SafeAreaView>
         <FlatList
@@ -69,5 +80,9 @@ export default class HomeScreen extends Component {
         />
       </SafeAreaView>
     );
+  }
+
+  render() {
+    return this.renderToScreen();
   }
 }
